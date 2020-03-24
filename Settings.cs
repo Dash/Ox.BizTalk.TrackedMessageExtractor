@@ -80,7 +80,7 @@ namespace Ox.BizTalk.TrackedMessageExtractor
 				this.BizTalkDTAHost = PromptFor<String>("SQL Host for BizTalkDTADb", this.BizTalkMgmtHost);
 
 			if (String.IsNullOrEmpty(this.BizTalkDTADb))
-				this.BizTalkDTADb = PromptFor<String>("Database name for BizTalkDTADb", this.BizTalkDTADb);
+				this.BizTalkDTADb = PromptFor<String>("Database name for BizTalkDTADb", "BizTalkDTADb");
 		}
 
 		/// <summary>

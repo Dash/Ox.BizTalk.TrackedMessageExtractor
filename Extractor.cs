@@ -24,6 +24,18 @@ namespace Ox.BizTalk.TrackedMessageExtractor
 			this._trackingDatabase = new TrackingDatabase(settings.BizTalkDTAHost, settings.BizTalkDTADb);
 		}
 
+		private string CleanFilename(string filename)
+		{
+			if(!String.IsNullOrEmpty(filename))
+			{
+				foreach(char c in Path.GetInvalidFileNameChars())
+				{
+					filename = filename.Replace(c.ToString(), String.Empty);
+				}
+			}
+			return filename;
+		}
+
 		/// <summary>
 		/// Saves out a message to a file, using tracked filename and timestamp where possible.
 		/// </summary>
@@ -35,6 +47,8 @@ namespace Ox.BizTalk.TrackedMessageExtractor
 			messageIdentifier = messageIdentifier.Trim();
 
 			Guid messageId = new Guid(messageIdentifier);
+
+			Console.Write("Processing {0}. ", messageIdentifier);
 
 			do
 			{
@@ -65,16 +79,31 @@ namespace Ox.BizTalk.TrackedMessageExtractor
 
 						if (part != null && part.Data != null)
 						{
+							// Attempt to construct a file name based on part data
 							string fileName = String.Empty;
+							string partFileName = part.PartProperties.Read("FileName", "http://schemas.microsoft.com/BizTalk/2003/mime-properties") as String;
+							string partFileExtension = saveFileExtension;
+
+							// Use the partName if there is no mime name
+							if (partFileName == null)
+							{
+								partFileName = partName;
+							}
+							else
+							// Use the extension from the filename for this part
+							{
+								partFileExtension = Path.GetExtension(partFileName);
+								partFileName = Path.GetFileNameWithoutExtension(partFileName);
+							}
 							
 							// Handle duplicate files names with an incrementing counter
 							int fileNameDuplicate = -1;
 							do
 							{
-								fileName = String.Format("{0}_{1}{3}{2}", saveFileName, partName, saveFileExtension, fileNameDuplicate++ >= 0 ? fileNameDuplicate.ToString() : String.Empty);
+								fileName = CleanFilename(String.Format("{0}_{1}{3}{2}", saveFileName, partFileName, partFileExtension, fileNameDuplicate++ >= 0 ? fileNameDuplicate.ToString() : String.Empty));
 							} while (File.Exists(fileName));
 
-							Console.WriteLine("Saving message {0} to {1}", messageId, fileName);
+							Console.WriteLine("Saving message to {0}", fileName);
 
 							using (FileStream fs = new FileStream(fileName, FileMode.CreateNew))
 							{
